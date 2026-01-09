@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cartas Desbloqueables</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(45deg, #000000 0%, #1a0015 25%, #0d0010 50%, #1a0015 75%, #000000 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            font-family: 'Arial', sans-serif;
+            color: #fff;
+            min-height: 100vh;
+            padding: 15px;
+            overflow-x: hidden;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-top: 25px;
+            margin-bottom: 30px;
+            font-size: clamp(1.3rem, 5vw, 2.5rem);
+            text-shadow: 0 0 20px #ff1493, 0 0 40px #ff1493;
+            color: #ff1493;
+            padding: 0 10px;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 20px;
+            padding: 10px;
+        }
+
+        @media (min-width: 768px) {
+            .cards-grid {
+                grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+                gap: 25px;
+                padding: 20px;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .cards-grid {
+                grid-template-columns: repeat(5, 1fr);
+                gap: 30px;
+            }
+        }
+
+        .card {
+            position: relative;
+            aspect-ratio: 3/4;
+            perspective: 1000px;
+        }
+
+        .card-flipper {
+            width: 100%;
+            height: 100%;
+            transform-style: preserve-3d;
+            transition: transform 0.8s;
+            position: relative;
+        }
+
+        .card.flipped .card-flipper {
+            transform: rotateY(180deg);
+        }
+
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 15px;
+        }
+
+        .card-front {
+            border: 2px solid #ff1493;
+            background: linear-gradient(135deg, #1a0015 0%, #2d0024 100%);
+            box-shadow: 0 0 20px #ff1493, 0 0 40px #ff1493, inset 0 0 20px rgba(255, 20, 147, 0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 15px 10px;
+            animation: neon-pulse 2s infinite;
+            cursor: pointer;
+        }
+
+        .card.unlocked .card-front {
+            background: linear-gradient(135deg, #2d0024 0%, #4d0040 100%);
+            border-color: #ff69b4;
+            box-shadow: 0 0 30px #ff69b4, 0 0 60px #ff1493;
+        }
+
+        @media (min-width: 768px) {
+            .card-front {
+                border: 3px solid #ff1493;
+                padding: 20px;
+            }
+        }
+
+        .card-back {
+            transform: rotateY(180deg);
+            background: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+        }
+
+        .card-number {
+            font-size: clamp(2rem, 8vw, 3rem);
+            font-weight: bold;
+            color: #ff1493;
+            text-shadow: 0 0 10px #ff1493;
+            margin-bottom: 10px;
+            z-index: 10;
+        }
+
+        .card.unlocked .card-number {
+            color: #ff69b4;
+        }
+
+        .timer {
+            font-size: clamp(0.9rem, 3vw, 1.2rem);
+            color: #ff69b4;
+            text-align: center;
+            margin-top: 5px;
+            font-weight: bold;
+            z-index: 10;
+        }
+
+        .timer-label {
+            font-size: clamp(0.7rem, 2.5vw, 0.9rem);
+            color: #ff1493;
+            margin-bottom: 5px;
+            text-align: center;
+            z-index: 10;
+        }
+
+        .lock-icon {
+            font-size: clamp(2rem, 6vw, 3rem);
+            margin: 10px 0;
+            opacity: 0.6;
+            z-index: 10;
+        }
+
+        .card.unlocked .lock-icon {
+            display: none;
+        }
+
+        .unlock-message {
+            display: none;
+            font-size: clamp(0.9rem, 3vw, 1.1rem);
+            color: #ff69b4;
+            text-align: center;
+            margin-top: 5px;
+            font-weight: bold;
+            z-index: 10;
+        }
+
+        .card.unlocked .unlock-message {
+            display: block;
+        }
+
+        .heart {
+            position: absolute;
+            font-size: clamp(14px, 4vw, 20px);
+            color: #ff1493;
+            animation: float 4s infinite ease-in-out;
+            pointer-events: none;
+            opacity: 0.8;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 0.8;
+            }
+            50% {
+                transform: translateY(-30px) rotate(180deg);
+                opacity: 0.4;
+            }
+        }
+
+        .heart:nth-child(1) { left: 10%; animation-delay: 0s; top: 20%; }
+        .heart:nth-child(2) { left: 30%; animation-delay: 0.5s; top: 40%; }
+        .heart:nth-child(3) { left: 50%; animation-delay: 1s; top: 60%; }
+        .heart:nth-child(4) { left: 70%; animation-delay: 1.5s; top: 30%; }
+        .heart:nth-child(5) { left: 90%; animation-delay: 2s; top: 70%; }
+
+        @keyframes neon-pulse {
+            0%, 100% {
+                box-shadow: 0 0 20px #ff1493, 0 0 40px #ff1493, inset 0 0 20px rgba(255, 20, 147, 0.2);
+            }
+            50% {
+                box-shadow: 0 0 30px #ff1493, 0 0 60px #ff1493, 0 0 80px #ff1493, inset 0 0 30px rgba(255, 20, 147, 0.3);
+            }
+        }
+
+        /* Estilos del sobre */
+        .envelope-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .envelope {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transition: transform 0.5s ease;
+        }
+
+        .envelope-body {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #d4a574 0%, #c19a6b 50%, #b8926a 100%);
+            border-radius: 10px;
+            box-shadow: 
+                0 4px 15px rgba(0, 0, 0, 0.4),
+                inset 0 2px 5px rgba(255, 255, 255, 0.2),
+                inset 0 -2px 5px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .envelope-body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, 
+                transparent 48%, rgba(139, 69, 19, 0.3) 49%, rgba(139, 69, 19, 0.3) 51%, transparent 52%);
+            background-size: 20px 20px;
+        }
+
+        .envelope-flap {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 50%;
+            background: linear-gradient(to bottom, #e6c9a8 0%, #d4a574 100%);
+            clip-path: polygon(0 0, 100% 0, 50% 100%);
+            transform-origin: top center;
+            transition: transform 1.2s ease;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+            z-index: 5;
+        }
+
+        .envelope.opening .envelope-flap {
+            transform: rotateX(-180deg);
+        }
+
+        .envelope-seal {
+            position: absolute;
+            top: 35%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 30%;
+            aspect-ratio: 1;
+            background: radial-gradient(circle, #ff1493 0%, #c71585 100%);
+            border-radius: 50%;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
+            z-index: 6;
+            transition: opacity 0.5s ease;
+        }
+
+        .envelope.opening .envelope-seal {
+            opacity: 0;
+        }
+
+        .letter-paper {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%) translateY(100%);
+            width: 85%;
+            height: 90%;
+            background: linear-gradient(135deg, #fefefe 0%, #f8f8f8 100%);
+            border-radius: 5px 5px 0 0;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+            transition: transform 1s ease 0.3s;
+            padding: clamp(15px, 4vw, 25px);
+            overflow: hidden;
+        }
+
+        .envelope.opening .letter-paper {
+            transform: translateX(-50%) translateY(10%);
+        }
+
+        .letter-content {
+            font-size: clamp(1.75rem, 2.5vw, 1rem);
+            color: #000000;
+            line-height: 1.5;
+            font-family: 'Georgia', serif;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+        }
+
+        /* Modal para carta expandida */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgb(200, 200, 200);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-letter {
+            width: 90%;
+            max-width: 800px;
+            height: 85vh;
+            background: linear-gradient(135deg, #fefefe 0%, #f8f8f8 100%);
+            border-radius: 10px;
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.7),
+                inset 0 1px 0 rgba(255, 255, 255, 0.5),
+                0 0 0 1px rgba(0, 0, 0, 0.1);
+            padding: 40px 30px;
+            position: relative;
+            animation: expandLetter 0.5s ease;
+            overflow-y: auto;
+            background-image:
+                linear-gradient(90deg, transparent 49%, rgba(221, 221, 221, 0.3) 49%, rgba(221, 221, 221, 0.3) 51%, transparent 51%),
+                linear-gradient(transparent 49%, rgba(221, 221, 221, 0.3) 49%, rgba(221, 221, 221, 0.3) 51%, transparent 51%);
+            background-size: 25px 25px, 25px 25px;
+            background-position: 0 0, 12px 12px;
+        }
+
+        @keyframes expandLetter {
+            from {
+                transform: scale(0.3);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #ff1493;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            background: #ff69b4;
+            transform: scale(1.1);
+        }
+
+        .modal-content {
+            font-size: clamp(1.1rem, 2.5vw, 1.6rem);
+            color: #333;
+            line-height: 1.8;
+            font-family: 'Georgia', serif;
+            text-align: center;
+        }
+
+        .modal-content p {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>💝 10 DIAS SIN TU NOVIO 💝</h1>
+        <div class="cards-grid" id="cardsGrid"></div>
+    </div>
+
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-letter">
+            <button class="modal-close" id="modalClose">×</button>
+            <div class="modal-content" id="modalContent"></div>
+        </div>
+    </div>
+
+    <script>
+        const UNLOCK_DATES = [
+            new Date(2026, 0, 9, 13, 0, 0),
+            new Date(2026, 0, 10, 21, 0, 0),
+            new Date(2026, 0, 11, 21, 0, 0),
+            new Date(2026, 0, 12, 21, 0, 0),
+            new Date(2026, 0, 13, 21, 0, 0),
+            new Date(2026, 0, 14, 21, 0, 0),
+            new Date(2026, 0, 15, 21, 0, 0),
+            new Date(2026, 0, 16, 21, 0, 0),
+            new Date(2026, 0, 17, 21, 0, 0),
+            new Date(2026, 0, 18, 21, 0, 0),
+            new Date(2026, 0, 19, 21, 0, 0)
+        ];
+
+        const ROMANTIC_CONTENT = [
+            "<p>Antes de que te vayas muy muy lejitos, quiero decirte que te voy a extrañar muchisisisisimo y que espero que te guste mucho estas sorpresasitas, y con el paso de los días van a ir desbloqueándose más cartitas muy bonitas y espero que te gusten tanto como yo estoy disfrutando prepararte esto, y regalarle mi tiempo a la PRINCESA mash hermosha y que mash AMO en el Universo entero. RECORDATORIOOO..... Todos los Dias a las 21 se te desbloquean nuevas Cartitas MUAJAJAJAJAJK, espero que no te pierdas ninguna, y espero tus mensajes cuando las leas.</p>",
+            "<p>Mi amor, este es el primer día sin vos y ya te extraño muchísimo. Cada momento que pasa me recuerda a la vez que eramos prácticamente desconocidos y ahora me siento incompleto sin vos, sin tenerte aca al lado mio. 💕</p>",
+            "<p>Segundo día y cuento las horas para volver a verte. Hoy es un dia para RECORDARTE: Que cuando te digo 'Te Amo', no lo hago por habito, lo hago para recordarte que realmente sos lo mejor que me ha pasado. Te amo mucho Princesita. 💖</p>",
+            "<p>Tercer día... Me despierto pensando en ti y me duermo soñando contigo. Tu ausencia me hace valorar aún más cada segundo a tu lado. Te amo más de lo que las palabras pueden expresar. 🌹</p>",
+            "<p>Cuarto día y mi corazón late más fuerte por verte. Hoy es un lindo dia para que recuerdes que me puedo cansar de todo, pero nunca nunca de vos, incluso cuando todo ya me cansó, lo único que realmente necesito es a vos Princesita. 💗</p>",
+            "<p>Quinto día... Cuando te extraño mucho mucho, entro a tu perfil para ver tus fotitos y tu hermosa sonrisa, las destacadas juntitos y me pongo a sonreír como un nene y ahi es cuando te extraño todavía mas y mas. 💝</p>",
+            "<p>Sexto día. Realmente necesito un abrazo tuyo princesa, ya te extraño mucho y daría lo que fuera por estar un ratito acostados juntitos y abrazados, reírnos como locos en la cama, contarnos los chismes y las boludeces que se mandan en nuestro entorno, criticar a todo el mundo por que si y porque se nos dio la gana. TE EXTRAÑO DEMASIADO LINDA. 💞</p>",
+            "<p>Séptimo día... Desde lo mas profundo de mi Corazón, quiero que sepaz que nunca voy a poder amar a otra persona de la manera en que te amo, y estar lejitos me hace extrañarte aun mas de lo que pensaba, ya quiero que sea el dia en que nos veamos y poder abrazarnos nuevamente. ✨</p>",
+            "<p>Octavo día, Quiero que siempre sepaz que cada vez que me doy cuenta que soy feliz, siempre lo hago cuando estoy con vos, Sos una personita muy especial para mi, y sinceramente nunca me imagine haciendo estas cosas por alguien menos cuando siempre fui una persona que no expreso ni un poco sus sentimientos, siempre fue un robotito que no le importaba nada mas que el mismo y hoy en dia lo unico que me importa sos vos 'Princesa Hermosa'. Te Amo con toda el Alma. 💫</p>",
+            "<p>Noveno día...Y si alguien me pregunta ¿Cuantas veces te metiste en mi cabeza?, yo diria que solo una, porque desde que entraste nunca mas te fuiste y ahora vives ahi para siempre en mi cabezita y en los momentos mas hermosos de mi vida. 🌟</p>",
+            "<p>¡Último día! Y hoy es para recordarte que me enamore loca y perdidamente de vos, y a lo que me refiero a vos, quiero decir que me enamore de quien sos, no solo por tu cuerpo. Me Enamore de tu vocesita y tu manera de reir, me enamore por la manera en que me tratas, y sobre todo porque vi el potencial que estaba escondido en un caparazon a punto de explotar, aunque se que te cuesta todavia un poco y que espero que siga saliendo de a poco la hermosa princesa que esta escondidita, me enamore de la princesa que quiero que siempre me demuestre su amor, y sea la mas empalagoza del mundo, y por mas que odio cuando me rechazas los besos y abrazos, me enamore y sos la q elijo dia a dia y la unica que quiero en mi mundo y en todos mis sueños. Te Amo Demasiado Princesita. 💖✨🌹</p>"
+        ];
+
+        let openEnvelope = null;
+
+        function initCards() {
+            const grid = document.getElementById('cardsGrid');
+            const now = new Date();
+
+            for (let i = 0; i < UNLOCK_DATES.length; i++) {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.id = `card-${i}`;
+
+                const unlockDate = UNLOCK_DATES[i];
+                const isUnlocked = now >= unlockDate;
+
+                if (isUnlocked) {
+                    card.classList.add('unlocked');
+                }
+
+                card.innerHTML = `
+                    <div class="card-flipper">
+                        <div class="card-front">
+                            <div class="heart">💗</div>
+                            <div class="heart">💖</div>
+                            <div class="heart">💕</div>
+                            <div class="heart">💗</div>
+                            <div class="heart">💖</div>
+                            <div class="card-number" ${i === 0 ? 'style="font-size: 1.5rem; line-height: 1.2;"' : ''}>${i === 0 ? "Antes que te vayas:" : i}</div>
+                            <div class="lock-icon">🔒</div>
+                            <div class="unlock-message">✨ ¡CLICK PARA ABRIR! ✨</div>
+                            <div class="timer-label">${isUnlocked ? 'Disponible ahora' : 'Se desbloquea en:'}</div>
+                            <div class="timer" id="timer-${i}"></div>
+                        </div>
+                        <div class="card-back">
+                            <div class="envelope-container">
+                                <div class="envelope" data-index="${i}">
+                                    <div class="envelope-body"></div>
+                                    <div class="envelope-flap"></div>
+                                    <div class="envelope-seal">💌</div>
+                                    <div class="letter-paper">
+                                        <div class="letter-content">
+                                            Click para leer
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                if (isUnlocked) {
+                    const front = card.querySelector('.card-front');
+                    front.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        flipCard(card);
+                    });
+                }
+
+                grid.appendChild(card);
+            }
+
+            updateTimers();
+            setInterval(updateTimers, 1000);
+        }
+
+        function flipCard(card) {
+            card.classList.add('flipped');
+            
+            setTimeout(() => {
+                const envelope = card.querySelector('.envelope');
+                envelope.classList.add('opening');
+                openEnvelope = envelope;
+
+                setTimeout(() => {
+                    const letterPaper = envelope.querySelector('.letter-paper');
+                    letterPaper.style.cursor = 'pointer';
+                    
+                    letterPaper.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const index = parseInt(envelope.dataset.index);
+                        openModal(index);
+                    });
+                }, 1300);
+            }, 800);
+        }
+
+        function openModal(index) {
+            const modal = document.getElementById('modalOverlay');
+            const content = document.getElementById('modalContent');
+            content.innerHTML = ROMANTIC_CONTENT[index];
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('modalOverlay');
+            modal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+
+            if (openEnvelope) {
+                openEnvelope.classList.remove('opening');
+                const card = openEnvelope.closest('.card');
+                if (card) {
+                    card.classList.remove('flipped');
+                }
+                openEnvelope = null;
+            }
+        }
+
+        document.getElementById('modalClose').addEventListener('click', closeModal);
+        document.getElementById('modalOverlay').addEventListener('click', (e) => {
+            if (e.target.id === 'modalOverlay') {
+                closeModal();
+            }
+        });
+
+        function updateTimers() {
+            const now = new Date();
+
+            for (let i = 0; i < UNLOCK_DATES.length; i++) {
+                const card = document.getElementById(`card-${i}`);
+                const timer = document.getElementById(`timer-${i}`);
+                const unlockDate = UNLOCK_DATES[i];
+                const diff = unlockDate - now;
+
+                if (diff <= 0) {
+                    if (!card.classList.contains('unlocked')) {
+                        card.classList.add('unlocked');
+                        const front = card.querySelector('.card-front');
+                        front.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            flipCard(card);
+                        });
+                        timer.textContent = '¡Ya disponible!';
+                    }
+                } else {
+                    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+                    let timeString = '';
+                    if (days > 0) timeString += `${days}d `;
+                    timeString += `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+                    timer.textContent = timeString;
+                }
+            }
+        }
+
+        initCards();
+    </script>
+</body>
+</html>
