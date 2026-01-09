@@ -454,6 +454,7 @@
     <body>
         <div class="container">
             <h1>💝 10 DIAS SIN TU NOVIO 💝</h1>
+            <div class="special-card-container" id="specialCardContainer"></div>
             <div class="cards-grid" id="cardsGrid"></div>
         </div>
 
@@ -496,6 +497,7 @@
             let openEnvelope = null;
 
             function initCards() {
+                const specialContainer = document.getElementById('specialCardContainer');
                 const grid = document.getElementById('cardsGrid');
                 const now = new Date();
 
@@ -503,11 +505,6 @@
                     const card = document.createElement('div');
                     card.className = 'card';
                     card.id = `card-${i}`;
-
-                    if (i === 0) {
-                        card.classList.add('featured-card');
-                    }
-
 
                     const unlockDate = UNLOCK_DATES[i];
                     const isUnlocked = now >= unlockDate;
@@ -555,7 +552,11 @@
                         });
                     }
 
-                    grid.appendChild(card);
+                    if (i === 0) {
+                        specialContainer.appendChild(card);
+                    } else {
+                        grid.appendChild(card);
+                    }
                 }
 
                 updateTimers();
